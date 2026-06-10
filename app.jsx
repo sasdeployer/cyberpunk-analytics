@@ -64,7 +64,7 @@ export default function CyberpunkDashboard() {
   );
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 font-mono" style={{
+    <div className="min-h-screen bg-[#4c1d95] text-white p-6 font-mono" style={{
       backgroundImage: 'repeating-linear-gradient(0deg, rgba(0,255,255,0.03) 0px, transparent 1px, transparent 2px, rgba(0,255,255,0.03) 3px)',
     }}>
       {/* Scanline effect */}
