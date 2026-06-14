@@ -1,0 +1,12 @@
+application:
+  name: deep-drift-cyberpunk-analytics
+  pods:
+    - name: app
+      image: "# filled by pipeline"
+      path: /
+      servicePorts:
+        - 80
+      vars:
+        NODE_ENV: production
+        PORT: "80"
+        HOSTNAME: "0.0.0.0"
