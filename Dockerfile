@@ -1,5 +1,5 @@
 # Build stage
-FROM node:20-alpine AS builder
+FROM mirror.gcr.io/library/node:22-alpine AS builder
 
 WORKDIR /app
 
@@ -7,16 +7,17 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci
+# Changed from 'npm ci' to 'npm install' because package-lock.json is missing from the repository
+RUN npm install
 
 # Copy source code
 COPY . .
 
 # Build the application
-RUN npm run build
+RUN NODE_OPTIONS="--max-old-space-size=4096" npm run build
 
 # Production stage
-FROM nginx:alpine
+FROM mirror.gcr.io/library/nginx:alpine
 
 # Copy built assets from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
