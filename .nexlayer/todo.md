@@ -4,12 +4,14 @@ Two lists, split by who can actually close the item.
 
 ## Needs code — the coding agent
 
-- [ ] **Blocker:** Replace `npm ci` with `npm install` in the Dockerfile, or commit a package-lock.json (`Dockerfile`)
-      _The repo has no package-lock.json, so `npm ci` exits with an error and the image never builds._
-- [ ] Use mirrored base images: mirror.gcr.io/library/node:20-alpine and mirror.gcr.io/library/nginx:alpine (`Dockerfile`)
-      _Pulling node:20-alpine and nginx:alpine directly from Docker Hub can hit rate limits and fail the build._
-- [ ] Repeat the security headers inside the static-asset location block (or add them with `always` there too) (`nginx.conf`)
-      _nginx drops server-level add_header directives in any location that defines its own add_header. JS, CSS and image responses therefore currently go out without X-Frame-Options or X-Content-Type-Options._
+- [ ] **Blocker:** Commit a package-lock.json or change 'npm ci' to 'npm install' in the Dockerfile (`Dockerfile`)
+      _'npm ci' exits with an error when no package-lock.json exists. The repository has none, so the image build fails and nothing deploys._
+- [ ] Use mirrored base images in the Dockerfile (`Dockerfile`)
+      _'FROM node:20-alpine' and 'FROM nginx:alpine' pull from Docker Hub directly, which the Nexlayer build rules require to be mirror.gcr.io/library/node:20-alpine and mirror.gcr.io/library/nginx:alpine. Bare Docker Hub pulls also risk rate-limit failures._
+- [ ] Add application/javascript to gzip_types in nginx.conf (`nginx.conf`)
+      _Vite's .js bundles are served as application/javascript, which isn't in the gzip_types list, so the largest assets (React and Recharts) go out uncompressed._
+- [ ] Repeat the security headers inside the static-asset location block (`nginx.conf`)
+      _In nginx, an add_header inside a location replaces the server-level ones. JS, CSS and image responses from the caching block therefore lose X-Frame-Options and X-Content-Type-Options._
 - [ ] Build the drafted image(s) once and fix what fails; check `nexlayer.yaml`.
 
 ## Needs the human
@@ -18,10 +20,10 @@ Two lists, split by who can actually close the item.
 
 ## Check after the deploy — the coding agent
 
-- [ ] GET / on the app URL returns 200 with Content-Type text/html and the page includes a <script> tag pointing at /assets/
-- [ ] GET /some/unknown/route on the app URL returns 200 and the same index.html (SPA fallback via try_files)
-- [ ] GET one of the /assets/*.js files referenced by index.html returns 200 with header `Cache-Control: public, immutable`
-- [ ] GET / response headers include X-Frame-Options: SAMEORIGIN and X-Content-Type-Options: nosniff
+- [ ] GET / on the app URL returns 200 with an HTML body containing the Vite-built script tag
+- [ ] GET /some/unknown/route on the app URL returns 200 and the same index.html (SPA fallback works)
+- [ ] Fetch one /assets/*.js file referenced by index.html with 'Accept-Encoding: gzip' and confirm a 200 with a 'Cache-Control: public, immutable' header
+- [ ] Load the app URL in a headless browser and confirm there are no console errors and the dashboard charts render
 
 ---
 

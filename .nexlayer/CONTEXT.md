@@ -5,23 +5,23 @@ starts with the same picture. Read this before proposing infrastructure
 changes.
 
 - **Repo** `https://github.com/sasdeployer/cyberpunk-analytics` on `main`
-- **Analyzed** 2026-10-06T08:48:19.943Z
+- **Analyzed** 2026-10-06T08:52:00.643Z
 
 ## Stack
 
 | Component | Version | How we know |
 | --- | --- | --- |
-| JavaScript | ES modules | read from `package.json`, `app.jsx`, `main.jsx` |
-| React | ^18.2.0 | read from `package.json` |
+| JavaScript (ES modules) | ES2020+ | read from `package.json`, `main.jsx`, `app.jsx` |
+| Node.js | 20 | read from `Dockerfile` |
+| React | ^18.2.0 | read from `package.json`, `README.md` |
 | Vite | ^5.0.8 | read from `package.json`, `vite.config.js` |
-| Tailwind CSS | ^3.4.0 | read from `package.json`, `tailwind.config.js`, `postcss.config.js` |
-| PostCSS | ^8.4.32 | read from `package.json`, `postcss.config.js` |
-| Autoprefixer | ^10.4.16 | read from `package.json` |
-| Recharts | ^2.10.3 | read from `package.json` |
+| @vitejs/plugin-react | ^4.2.1 | read from `package.json`, `vite.config.js` |
+| Tailwind CSS | ^3.4.0 | read from `package.json`, `tailwind.config.js`, `index.css` |
+| PostCSS / Autoprefixer | ^8.4.32 / ^10.4.16 | read from `package.json`, `postcss.config.js` |
+| Recharts | ^2.10.3 | read from `package.json`, `README.md` |
 | lucide-react | ^0.263.1 | read from `package.json` |
 | nginx | alpine | read from `Dockerfile`, `nginx.conf` |
-| Docker | multi-stage build | read from `Dockerfile` |
-| Node.js | 20 (build stage) | read from `Dockerfile` |
+| Docker (multi-stage build) | n/a | read from `Dockerfile` |
 
 ## How Nexlayer will run it
 
@@ -39,22 +39,15 @@ Networking, HTTPS, and service discovery are handled.
 
 This app needs no secrets to run.
 
-## What the human told us
-
-**Purpose.** just testing
-
-**Stage.** This is a side project.
-
-Said by a person, not derived from the code. Where this contradicts what
-the repo looks like, the person is right about intent and the repo is
-right about what exists today.
-
 ## Notes from the analysis
 
-- Pure static frontend with no backend, database or cache, so a single web pod is enough.
-- Build with the repo Dockerfile: the node:20-alpine builder stage should use mirror.gcr.io/library/node:20-alpine, and the runtime stage mirror.gcr.io/library/nginx:alpine, to avoid Docker Hub pull failures on the cluster.
-- nginx serves the Vite dist output on port 80 (nginx.conf is copied to /etc/nginx/conf.d/default.conf).
-- No environment variables are read by the app, so none need to be configured.
+- This is a static SPA, so one pod is enough. nginx serves the Vite build output on port 80, and no database, cache or worker pod is needed.
+- The web pod is built from the repo Dockerfile. Change its base images to the mirror form: 'FROM mirror.gcr.io/library/node:20-alpine AS builder' and 'FROM mirror.gcr.io/library/nginx:alpine'.
+- The container listens on port 80. nginx.conf was not provided, so check that it has 'listen 80' and an SPA fallback ('try_files $uri /index.html').
+- The dev server uses port 3000, but the production container uses port 80. Use 80 for the Nexlayer pod.
+- The build relies on 'npm ci', so package-lock.json must be committed. The root listing does not show one, and the Docker build will fail without it. If it is missing, generate one or switch the Dockerfile to 'npm install'.
+- The source files sit at the repo root (app.jsx, main.jsx), not under src/. Check that index.html's script path and main.jsx's import of the app component match the filename casing exactly, because the Linux build is case-sensitive (app.jsx vs App.jsx).
+- No environment variables or secrets are used. Any data shown appears to be generated client-side, and no API calls are visible in the files provided.
 
 ## Talking to Nexlayer
 

@@ -10,7 +10,7 @@ ask Nexlayer for it (see "How to deploy").
 | --- | --- |
 | Name | `cyberpunk-analytics` |
 | Repo | `https://github.com/sasdeployer/cyberpunk-analytics` on `main` |
-| Planned | 2026-10-06T08:48:19.943Z |
+| Planned | 2026-10-06T08:52:00.643Z |
 | Registered with Nexlayer | yes |
 
 `.nexlayer/plan.lock` pins the commit this plan was written against. If HEAD
@@ -22,26 +22,28 @@ re-check before deploying.
 Written by the Nexlayer agent from this repo. Every decision cites the files it
 rests on; if the code has changed since, re-check those files first.
 
-Cyberpunk Analytics is a static React and Vite dashboard. It has no backend, database or keys. The repo's Dockerfile builds the bundle with Node and serves the dist folder from nginx on port 80, so one web service is all it needs. The thing that matters most is that the Dockerfile runs `npm ci` but the repo has no package-lock.json, so the build will fail until that is fixed.
+Cyberpunk Analytics is a static React dashboard: Vite builds it into static files and nginx serves them on port 80 from a single web service, with no backend, database or keys. The most important thing for production is the build itself. The Dockerfile runs 'npm ci', but no package-lock.json is committed, so the image build will fail until a lockfile exists or the install command changes.
 
-- **services: One web service: the nginx image built from the repo Dockerfile, serving the built static site on port 80 at path /** — The app is a pure client-side React bundle. Its package.json scripts are only `vite`, `vite build` and `vite preview`, and the Dockerfile ends in nginx serving /usr/share/nginx/html. (`package.json`, `Dockerfile`, `nginx.conf`)
-- **build: Build with the existing multi-stage Dockerfile at the repo root, after changing `npm ci` to `npm install` and moving both FROM lines to mirror.gcr.io/library images** — `npm ci` requires a package-lock.json, and the repo tree has none. Unmirrored Docker Hub base images risk pull failures. (`Dockerfile`, `package.json`)
-- **networking: Port 80, the nginx listen port, is the only port. The Vite dev port 3000 is ignored in production.** — nginx.conf listens on 80 and the Dockerfile exposes 80. The vite.config.js server block (0.0.0.0:3000) only affects `npm run dev`. (`nginx.conf`, `Dockerfile`, `vite.config.js`)
-- **keys: No keys or environment variables are needed** — The app has no backend and no env vars were found. The service's vars are empty. (`package.json`, `vite.config.js`)
-- **storage: No volume is needed** — Nothing is written at runtime. nginx only serves files baked into the image at build time. (`Dockerfile`, `nginx.conf`)
+- **services: One web service, built from the repo, that serves the compiled SPA with nginx. No database, cache or worker.** — package.json has only frontend dependencies (react, recharts, lucide-react), and the Dockerfile's final stage is nginx serving /app/dist, so there is nothing else to run. (`package.json`, `Dockerfile`)
+- **build: Use the repo's existing multi-stage Dockerfile: node:20-alpine runs 'npm run build' (vite build), then nginx:alpine serves dist with the repo's nginx.conf. Switch both base images to their mirror.gcr.io/library form and fix the install step.** — The Dockerfile already produces a working static image, but it calls 'npm ci' and no package-lock.json is in the repository, and its FROM lines use bare Docker Hub names. (`Dockerfile`, `package.json`, `nginx.conf`)
+- **networking: Expose the web service on port 80 at path /. Ignore the Vite dev port 3000.** — nginx.conf has 'listen 80' and the Dockerfile EXPOSEs 80. Port 3000 in vite.config.js only applies to the dev server. (`nginx.conf`, `Dockerfile`, `vite.config.js`)
+- **health: Use GET / as the health check. Client-side routes fall back to index.html.** — nginx.conf serves index.html at / and has 'try_files $uri $uri/ /index.html', so any path returns the SPA shell with 200. (`nginx.conf`)
+- **storage: No volume. The service is stateless.** — The image only contains built static assets, and nothing in the repo writes data that must survive a restart. (`Dockerfile`, `package.json`)
+- **keys: No keys or environment variables.** — No env vars or secrets are referenced in the config files read, and the dashboard has no backend to authenticate against. (`package.json`, `vite.config.js`)
 
 ### Fix before production
 
-- **Blocker** — Replace `npm ci` with `npm install` in the Dockerfile, or commit a package-lock.json: The repo has no package-lock.json, so `npm ci` exits with an error and the image never builds. (`Dockerfile`)
-- Use mirrored base images: mirror.gcr.io/library/node:20-alpine and mirror.gcr.io/library/nginx:alpine: Pulling node:20-alpine and nginx:alpine directly from Docker Hub can hit rate limits and fail the build. (`Dockerfile`)
-- Repeat the security headers inside the static-asset location block (or add them with `always` there too): nginx drops server-level add_header directives in any location that defines its own add_header. JS, CSS and image responses therefore currently go out without X-Frame-Options or X-Content-Type-Options. (`nginx.conf`)
+- **Blocker** — Commit a package-lock.json or change 'npm ci' to 'npm install' in the Dockerfile: 'npm ci' exits with an error when no package-lock.json exists. The repository has none, so the image build fails and nothing deploys. (`Dockerfile`)
+- Use mirrored base images in the Dockerfile: 'FROM node:20-alpine' and 'FROM nginx:alpine' pull from Docker Hub directly, which the Nexlayer build rules require to be mirror.gcr.io/library/node:20-alpine and mirror.gcr.io/library/nginx:alpine. Bare Docker Hub pulls also risk rate-limit failures. (`Dockerfile`)
+- Add application/javascript to gzip_types in nginx.conf: Vite's .js bundles are served as application/javascript, which isn't in the gzip_types list, so the largest assets (React and Recharts) go out uncompressed. (`nginx.conf`)
+- Repeat the security headers inside the static-asset location block: In nginx, an add_header inside a location replaces the server-level ones. JS, CSS and image responses from the caching block therefore lose X-Frame-Options and X-Content-Type-Options. (`nginx.conf`)
 
 ### Verify after the deploy
 
-1. GET / on the app URL returns 200 with Content-Type text/html and the page includes a <script> tag pointing at /assets/
-2. GET /some/unknown/route on the app URL returns 200 and the same index.html (SPA fallback via try_files)
-3. GET one of the /assets/*.js files referenced by index.html returns 200 with header `Cache-Control: public, immutable`
-4. GET / response headers include X-Frame-Options: SAMEORIGIN and X-Content-Type-Options: nosniff
+1. GET / on the app URL returns 200 with an HTML body containing the Vite-built script tag
+2. GET /some/unknown/route on the app URL returns 200 and the same index.html (SPA fallback works)
+3. Fetch one /assets/*.js file referenced by index.html with 'Accept-Encoding: gzip' and confirm a 200 with a 'Cache-Control: public, immutable' header
+4. Load the app URL in a headless browser and confirm there are no console errors and the dashboard charts render
 
 ## Drafts in this pull request
 
@@ -52,12 +54,6 @@ missing (never over an existing file):
 
 Build them once, fix what fails, then deploy with `.nexlayer/pipeline.yaml`.
 After the first successful deploy, these files are the source of truth.
-
-## What this app is for
-
-just testing
-
-The human calls this a side project.
 
 ## Can this deploy right now?
 
