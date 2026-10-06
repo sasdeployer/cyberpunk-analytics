@@ -3,7 +3,7 @@
   "app": "cyberpunk-analytics",
   "repo": "https://github.com/sasdeployer/cyberpunk-analytics",
   "branch": "main",
-  "analyzedAt": "2026-10-06T08:47:47.317Z",
+  "analyzedAt": "2026-10-06T08:48:19.943Z",
   "registered": true,
   "techStack": [
     {
@@ -165,7 +165,10 @@
     "nginx serves the Vite dist output on port 80 (nginx.conf is copied to /etc/nginx/conf.d/default.conf).",
     "No environment variables are read by the app, so none need to be configured."
   ],
-  "intent": null,
+  "intent": {
+    "purpose": "just testing",
+    "stage": "side-project"
+  },
   "fromManifest": false,
   "live": null,
   "legacyDocs": [],

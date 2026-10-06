@@ -10,7 +10,7 @@ ask Nexlayer for it (see "How to deploy").
 | --- | --- |
 | Name | `cyberpunk-analytics` |
 | Repo | `https://github.com/sasdeployer/cyberpunk-analytics` on `main` |
-| Planned | 2026-10-06T08:47:47.317Z |
+| Planned | 2026-10-06T08:48:19.943Z |
 | Registered with Nexlayer | yes |
 
 `.nexlayer/plan.lock` pins the commit this plan was written against. If HEAD
@@ -52,6 +52,12 @@ missing (never over an existing file):
 
 Build them once, fix what fails, then deploy with `.nexlayer/pipeline.yaml`.
 After the first successful deploy, these files are the source of truth.
+
+## What this app is for
+
+just testing
+
+The human calls this a side project.
 
 ## Can this deploy right now?
 

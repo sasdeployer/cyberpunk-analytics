@@ -5,7 +5,7 @@ starts with the same picture. Read this before proposing infrastructure
 changes.
 
 - **Repo** `https://github.com/sasdeployer/cyberpunk-analytics` on `main`
-- **Analyzed** 2026-10-06T08:47:47.317Z
+- **Analyzed** 2026-10-06T08:48:19.943Z
 
 ## Stack
 
@@ -38,6 +38,16 @@ Networking, HTTPS, and service discovery are handled.
 ## Secrets
 
 This app needs no secrets to run.
+
+## What the human told us
+
+**Purpose.** just testing
+
+**Stage.** This is a side project.
+
+Said by a person, not derived from the code. Where this contradicts what
+the repo looks like, the person is right about intent and the repo is
+right about what exists today.
 
 ## Notes from the analysis
 
