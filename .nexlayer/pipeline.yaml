@@ -25,10 +25,7 @@ verify:                         # done means all of these pass
   - url: /                       # the live URL answers 2xx/3xx with a real page
 rollback: redeploy the previous image tag from the Nexlayer deploy history
 notes:                          # from the analysis — keep what holds, fix what doesn't
-  - 'Single-pod deployment: the app is a static SPA with no backend, database, or cache, so no other pods are needed.'
-  - 'The web pod is built from the repo Dockerfile and nginx serves the Vite build output on port 80.'
-  - 'Change the Dockerfile base images to the mirror: ''FROM mirror.gcr.io/library/node:20-alpine AS builder'' and ''FROM mirror.gcr.io/library/nginx:alpine''. Unprefixed Docker Hub references may fail on the cluster.'
-  - 'The root listing shows no package-lock.json, but the Dockerfile runs ''npm ci'', which fails without a lockfile (the .gitignore may be excluding it). Commit package-lock.json or switch to ''npm install''.'
-  - 'Source files sit at the repo root (app.jsx, main.jsx). Check that import paths match file-name case exactly (e.g. ''./app.jsx'' vs ''./App.jsx''), since Linux builds are case-sensitive.'
-  - 'The Vite dev server uses port 3000 locally, but the production container listens on port 80, so the Nexlayer pod port is 80.'
-  - 'Any backend API added later must be addressed as <podName>.pod:<port> from server-side code. Browser code cannot reach .pod hostnames.'
+  - 'Pure static frontend with no backend, database or cache, so a single web pod is enough.'
+  - 'Build with the repo Dockerfile: the node:20-alpine builder stage should use mirror.gcr.io/library/node:20-alpine, and the runtime stage mirror.gcr.io/library/nginx:alpine, to avoid Docker Hub pull failures on the cluster.'
+  - 'nginx serves the Vite dist output on port 80 (nginx.conf is copied to /etc/nginx/conf.d/default.conf).'
+  - 'No environment variables are read by the app, so none need to be configured.'
