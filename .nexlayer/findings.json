@@ -3,61 +3,35 @@
   "app": "cyberpunk-analytics",
   "repo": "https://github.com/sasdeployer/cyberpunk-analytics",
   "branch": "main",
-  "analyzedAt": "2026-10-06T08:52:00.643Z",
+  "analyzedAt": "2026-10-07T20:24:50.937Z",
   "registered": true,
   "techStack": [
     {
-      "name": "JavaScript (ES modules)",
+      "name": "JavaScript",
       "kind": "language",
-      "version": "ES2020+",
+      "version": "ES modules",
       "basis": {
         "kind": "read",
         "sources": [
-          "package.json",
-          "main.jsx",
-          "app.jsx"
-        ]
-      }
-    },
-    {
-      "name": "Node.js",
-      "kind": "language",
-      "version": "20",
-      "basis": {
-        "kind": "read",
-        "sources": [
-          "Dockerfile"
+          "package.json"
         ]
       }
     },
     {
       "name": "React",
       "kind": "framework",
-      "version": "^18.2.0",
+      "version": "18.2",
       "basis": {
         "kind": "read",
         "sources": [
-          "package.json",
-          "README.md"
+          "package.json"
         ]
       }
     },
     {
       "name": "Vite",
       "kind": "build",
-      "version": "^5.0.8",
-      "basis": {
-        "kind": "read",
-        "sources": [
-          "package.json",
-          "vite.config.js"
-        ]
-      }
-    },
-    {
-      "name": "@vitejs/plugin-react",
-      "kind": "build",
-      "version": "^4.2.1",
+      "version": "5.0",
       "basis": {
         "kind": "read",
         "sources": [
@@ -68,45 +42,32 @@
     },
     {
       "name": "Tailwind CSS",
-      "kind": "framework",
-      "version": "^3.4.0",
+      "kind": "build",
+      "version": "3.4",
       "basis": {
         "kind": "read",
         "sources": [
           "package.json",
           "tailwind.config.js",
-          "index.css"
-        ]
-      }
-    },
-    {
-      "name": "PostCSS / Autoprefixer",
-      "kind": "build",
-      "version": "^8.4.32 / ^10.4.16",
-      "basis": {
-        "kind": "read",
-        "sources": [
-          "package.json",
           "postcss.config.js"
         ]
       }
     },
     {
       "name": "Recharts",
-      "kind": "framework",
-      "version": "^2.10.3",
+      "kind": "tool",
+      "version": "2.10",
       "basis": {
         "kind": "read",
         "sources": [
-          "package.json",
-          "README.md"
+          "package.json"
         ]
       }
     },
     {
-      "name": "lucide-react",
-      "kind": "framework",
-      "version": "^0.263.1",
+      "name": "Lucide React",
+      "kind": "tool",
+      "version": "0.263",
       "basis": {
         "kind": "read",
         "sources": [
@@ -127,9 +88,9 @@
       }
     },
     {
-      "name": "Docker (multi-stage build)",
-      "kind": "tool",
-      "version": "n/a",
+      "name": "Docker",
+      "kind": "infra",
+      "version": "multi-stage",
       "basis": {
         "kind": "read",
         "sources": [
@@ -163,13 +124,11 @@
   "codeGaps": [],
   "buildConfig": {},
   "deployNotes": [
-    "This is a static SPA, so one pod is enough. nginx serves the Vite build output on port 80, and no database, cache or worker pod is needed.",
-    "The web pod is built from the repo Dockerfile. Change its base images to the mirror form: 'FROM mirror.gcr.io/library/node:20-alpine AS builder' and 'FROM mirror.gcr.io/library/nginx:alpine'.",
-    "The container listens on port 80. nginx.conf was not provided, so check that it has 'listen 80' and an SPA fallback ('try_files $uri /index.html').",
-    "The dev server uses port 3000, but the production container uses port 80. Use 80 for the Nexlayer pod.",
-    "The build relies on 'npm ci', so package-lock.json must be committed. The root listing does not show one, and the Docker build will fail without it. If it is missing, generate one or switch the Dockerfile to 'npm install'.",
-    "The source files sit at the repo root (app.jsx, main.jsx), not under src/. Check that index.html's script path and main.jsx's import of the app component match the filename casing exactly, because the Linux build is case-sensitive (app.jsx vs App.jsx).",
-    "No environment variables or secrets are used. Any data shown appears to be generated client-side, and no API calls are visible in the files provided."
+    "Static SPA with no backend or database, so a single pod is enough",
+    "The Dockerfile uses a multi-stage build; the base images should be mirrored as mirror.gcr.io/library/node:20-alpine and mirror.gcr.io/library/nginx:alpine",
+    "nginx serves the built assets on port 80",
+    "The Dockerfile references nginx.conf, which is present in the repo",
+    "The Dockerfile runs npm ci, which requires a package-lock.json that is not in the root listing. Add one or switch to npm install"
   ],
   "intent": null,
   "fromManifest": false,
@@ -182,97 +141,78 @@
     "noTemplate": []
   },
   "productionPlan": {
-    "summary": "Cyberpunk Analytics is a static React dashboard: Vite builds it into static files and nginx serves them on port 80 from a single web service, with no backend, database or keys. The most important thing for production is the build itself. The Dockerfile runs 'npm ci', but no package-lock.json is committed, so the image build will fail until a lockfile exists or the install command changes.",
+    "summary": "A static React + Vite + Tailwind analytics dashboard, built once and served by nginx on port 80 from a single web service. There is no backend, database or keys, so nothing needs a volume. The one thing that matters most: the existing Dockerfile runs `npm ci`, but the repo has no package-lock.json, so the build fails until that is fixed.",
     "decisions": [
       {
         "topic": "services",
-        "decision": "One web service, built from the repo, that serves the compiled SPA with nginx. No database, cache or worker.",
-        "why": "package.json has only frontend dependencies (react, recharts, lucide-react), and the Dockerfile's final stage is nginx serving /app/dist, so there is nothing else to run.",
+        "decision": "One web service, built from the repo's Dockerfile, serving the built SPA with nginx",
+        "why": "The app is a client-only React dashboard with no server code, database or external services, and the Dockerfile builds to dist/ and serves it with nginx.",
         "evidence": [
+          "Dockerfile",
           "package.json",
+          "app.jsx",
+          "main.jsx"
+        ]
+      },
+      {
+        "topic": "networking",
+        "decision": "Expose port 80 at path / and keep nginx.conf's try_files fallback to index.html",
+        "why": "nginx.conf listens on 80 and routes unknown paths to index.html, so client-side routes resolve.",
+        "evidence": [
+          "nginx.conf",
           "Dockerfile"
         ]
       },
       {
         "topic": "build",
-        "decision": "Use the repo's existing multi-stage Dockerfile: node:20-alpine runs 'npm run build' (vite build), then nginx:alpine serves dist with the repo's nginx.conf. Switch both base images to their mirror.gcr.io/library form and fix the install step.",
-        "why": "The Dockerfile already produces a working static image, but it calls 'npm ci' and no package-lock.json is in the repository, and its FROM lines use bare Docker Hub names.",
-        "evidence": [
-          "Dockerfile",
-          "package.json",
-          "nginx.conf"
-        ]
-      },
-      {
-        "topic": "networking",
-        "decision": "Expose the web service on port 80 at path /. Ignore the Vite dev port 3000.",
-        "why": "nginx.conf has 'listen 80' and the Dockerfile EXPOSEs 80. Port 3000 in vite.config.js only applies to the dev server.",
-        "evidence": [
-          "nginx.conf",
-          "Dockerfile",
-          "vite.config.js"
-        ]
-      },
-      {
-        "topic": "health",
-        "decision": "Use GET / as the health check. Client-side routes fall back to index.html.",
-        "why": "nginx.conf serves index.html at / and has 'try_files $uri $uri/ /index.html', so any path returns the SPA shell with 200.",
-        "evidence": [
-          "nginx.conf"
-        ]
-      },
-      {
-        "topic": "storage",
-        "decision": "No volume. The service is stateless.",
-        "why": "The image only contains built static assets, and nothing in the repo writes data that must survive a restart.",
+        "decision": "Keep the multi-stage Dockerfile, move the base images to mirror.gcr.io/library/node:20-alpine and mirror.gcr.io/library/nginx:alpine, and use `npm install` instead of `npm ci`",
+        "why": "The Dockerfile uses Docker Hub images and `npm ci`, but there is no package-lock.json in the tree, so `npm ci` fails.",
         "evidence": [
           "Dockerfile",
           "package.json"
         ]
       },
       {
-        "topic": "keys",
-        "decision": "No keys or environment variables.",
-        "why": "No env vars or secrets are referenced in the config files read, and the dashboard has no backend to authenticate against.",
+        "topic": "storage",
+        "decision": "No volumes",
+        "why": "The app stores no data at runtime. nginx only serves static files baked into the image.",
         "evidence": [
-          "package.json",
-          "vite.config.js"
+          "Dockerfile",
+          "nginx.conf"
+        ]
+      },
+      {
+        "topic": "scaling",
+        "decision": "Run the web service at 1 instance by default; it can scale out freely",
+        "why": "Static files served by nginx keep no session state.",
+        "evidence": [
+          "nginx.conf"
         ]
       }
     ],
     "fix_before_production": [
       {
-        "title": "Commit a package-lock.json or change 'npm ci' to 'npm install' in the Dockerfile",
-        "why": "'npm ci' exits with an error when no package-lock.json exists. The repository has none, so the image build fails and nothing deploys.",
+        "title": "Commit a package-lock.json or replace `npm ci` with `npm install` in the Dockerfile",
+        "why": "`npm ci` exits with an error when no lockfile is present, so the image build fails and nothing deploys.",
         "where": "Dockerfile",
         "severity": "blocker"
       },
       {
-        "title": "Use mirrored base images in the Dockerfile",
-        "why": "'FROM node:20-alpine' and 'FROM nginx:alpine' pull from Docker Hub directly, which the Nexlayer build rules require to be mirror.gcr.io/library/node:20-alpine and mirror.gcr.io/library/nginx:alpine. Bare Docker Hub pulls also risk rate-limit failures.",
+        "title": "Change the FROM lines to use mirror.gcr.io/library/",
+        "why": "Pulling from Docker Hub directly can hit rate limits and fail the build.",
         "where": "Dockerfile",
-        "severity": "should"
-      },
-      {
-        "title": "Add application/javascript to gzip_types in nginx.conf",
-        "why": "Vite's .js bundles are served as application/javascript, which isn't in the gzip_types list, so the largest assets (React and Recharts) go out uncompressed.",
-        "where": "nginx.conf",
-        "severity": "should"
-      },
-      {
-        "title": "Repeat the security headers inside the static-asset location block",
-        "why": "In nginx, an add_header inside a location replaces the server-level ones. JS, CSS and image responses from the caching block therefore lose X-Frame-Options and X-Content-Type-Options.",
-        "where": "nginx.conf",
         "severity": "should"
       }
     ],
     "verify_after_deploy": [
-      "GET / on the app URL returns 200 with an HTML body containing the Vite-built script tag",
-      "GET /some/unknown/route on the app URL returns 200 and the same index.html (SPA fallback works)",
-      "Fetch one /assets/*.js file referenced by index.html with 'Accept-Encoding: gzip' and confirm a 200 with a 'Cache-Control: public, immutable' header",
-      "Load the app URL in a headless browser and confirm there are no console errors and the dashboard charts render"
+      "GET / on the app URL returns 200 with an HTML body containing a div with id root",
+      "GET /some/unknown/route on the app URL returns 200 (served by the index.html fallback)",
+      "A JS asset referenced in index.html returns 200 with a Cache-Control header containing 'immutable'",
+      "The response to / includes the X-Content-Type-Options: nosniff header"
     ],
-    "open_questions": [],
+    "open_questions": [
+      "The dashboard shows metrics but the repo has no data source. Is it meant to stay demo/mock data, or should it later connect to a real analytics API?"
+    ],
     "nexlayer_yaml": "application:\n  name: cyberpunk-analytics\n  pods:\n    - name: web\n      image: \"registry.nexlayer.io/YOUR_USER_ID/cyberpunk-analytics-web:planned\"\n      path: /\n      servicePorts:\n        - 80\n      vars: {}\n",
     "builds": [
       {
@@ -283,6 +223,7 @@
         "notes": ""
       }
     ],
+    "yaml_valid": true,
     "model": "anthropic/claude-opus-5.5",
     "dropped_evidence": 0
   },
