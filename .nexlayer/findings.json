@@ -3,7 +3,7 @@
   "app": "cyberpunk-analytics",
   "repo": "https://github.com/sasdeployer/cyberpunk-analytics",
   "branch": "main",
-  "analyzedAt": "2026-10-07T20:24:50.937Z",
+  "analyzedAt": "2026-10-07T20:25:27.676Z",
   "registered": true,
   "techStack": [
     {
@@ -130,7 +130,9 @@
     "The Dockerfile references nginx.conf, which is present in the repo",
     "The Dockerfile runs npm ci, which requires a package-lock.json that is not in the root listing. Add one or switch to npm install"
   ],
-  "intent": null,
+  "intent": {
+    "stage": "side-project"
+  },
   "fromManifest": false,
   "live": null,
   "legacyDocs": [],
