@@ -3,7 +3,7 @@
   "app": "cyberpunk-analytics",
   "repo": "https://github.com/sasdeployer/cyberpunk-analytics",
   "branch": "main",
-  "analyzedAt": "2026-10-08T02:31:30.497Z",
+  "analyzedAt": "2026-10-08T02:31:49.238Z",
   "registered": true,
   "techStack": [
     {
@@ -142,7 +142,9 @@
     "No backend, database, or cache is present; data appears to be generated client-side, so no other pods are needed.",
     "No environment variables are required."
   ],
-  "intent": null,
+  "intent": {
+    "stage": "experiment"
+  },
   "fromManifest": false,
   "live": null,
   "legacyDocs": [],
