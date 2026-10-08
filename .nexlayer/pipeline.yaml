@@ -25,8 +25,6 @@ verify:                         # done means all of these pass
   - url: /                       # the live URL answers 2xx/3xx with a real page
 rollback: redeploy the previous image tag from the Nexlayer deploy history
 notes:                          # from the analysis — keep what holds, fix what doesn't
-  - 'Static SPA with no backend or database, so a single pod is enough'
-  - 'The Dockerfile uses a multi-stage build; the base images should be mirrored as mirror.gcr.io/library/node:20-alpine and mirror.gcr.io/library/nginx:alpine'
-  - 'nginx serves the built assets on port 80'
-  - 'The Dockerfile references nginx.conf, which is present in the repo'
-  - 'The Dockerfile runs npm ci, which requires a package-lock.json that is not in the root listing. Add one or switch to npm install'
+  - 'Single static frontend pod: the Dockerfile builds with node:20-alpine and serves dist via nginx on port 80. The Dockerfile base images should be mirrored (mirror.gcr.io/library/node:20-alpine and mirror.gcr.io/library/nginx:alpine) for the cluster.'
+  - 'No backend, database, or cache is present; data appears to be generated client-side, so no other pods are needed.'
+  - 'No environment variables are required.'

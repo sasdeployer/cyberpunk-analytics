@@ -5,18 +5,19 @@ starts with the same picture. Read this before proposing infrastructure
 changes.
 
 - **Repo** `https://github.com/sasdeployer/cyberpunk-analytics` on `main`
-- **Analyzed** 2026-10-07T20:25:27.676Z
+- **Analyzed** 2026-10-08T02:31:30.497Z
 
 ## Stack
 
 | Component | Version | How we know |
 | --- | --- | --- |
-| JavaScript | ES modules | read from `package.json` |
+| JavaScript | ES modules | read from `package.json`, `app.jsx`, `main.jsx` |
 | React | 18.2 | read from `package.json` |
 | Vite | 5.0 | read from `package.json`, `vite.config.js` |
 | Tailwind CSS | 3.4 | read from `package.json`, `tailwind.config.js`, `postcss.config.js` |
+| PostCSS | 8.4 | read from `package.json`, `postcss.config.js` |
 | Recharts | 2.10 | read from `package.json` |
-| Lucide React | 0.263 | read from `package.json` |
+| lucide-react | 0.263 | read from `package.json` |
 | nginx | alpine | read from `Dockerfile`, `nginx.conf` |
 | Docker | multi-stage | read from `Dockerfile` |
 
@@ -36,21 +37,11 @@ Networking, HTTPS, and service discovery are handled.
 
 This app needs no secrets to run.
 
-## What the human told us
-
-**Stage.** This is a side project.
-
-Said by a person, not derived from the code. Where this contradicts what
-the repo looks like, the person is right about intent and the repo is
-right about what exists today.
-
 ## Notes from the analysis
 
-- Static SPA with no backend or database, so a single pod is enough
-- The Dockerfile uses a multi-stage build; the base images should be mirrored as mirror.gcr.io/library/node:20-alpine and mirror.gcr.io/library/nginx:alpine
-- nginx serves the built assets on port 80
-- The Dockerfile references nginx.conf, which is present in the repo
-- The Dockerfile runs npm ci, which requires a package-lock.json that is not in the root listing. Add one or switch to npm install
+- Single static frontend pod: the Dockerfile builds with node:20-alpine and serves dist via nginx on port 80. The Dockerfile base images should be mirrored (mirror.gcr.io/library/node:20-alpine and mirror.gcr.io/library/nginx:alpine) for the cluster.
+- No backend, database, or cache is present; data appears to be generated client-side, so no other pods are needed.
+- No environment variables are required.
 
 ## Talking to Nexlayer
 

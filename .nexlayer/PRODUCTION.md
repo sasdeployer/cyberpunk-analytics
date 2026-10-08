@@ -10,7 +10,7 @@ ask Nexlayer for it (see "How to deploy").
 | --- | --- |
 | Name | `cyberpunk-analytics` |
 | Repo | `https://github.com/sasdeployer/cyberpunk-analytics` on `main` |
-| Planned | 2026-10-07T20:25:27.676Z |
+| Planned | 2026-10-08T02:31:30.497Z |
 | Registered with Nexlayer | yes |
 
 `.nexlayer/plan.lock` pins the commit this plan was written against. If HEAD
@@ -22,31 +22,28 @@ re-check before deploying.
 Written by the Nexlayer agent from this repo. Every decision cites the files it
 rests on; if the code has changed since, re-check those files first.
 
-A static React + Vite + Tailwind analytics dashboard, built once and served by nginx on port 80 from a single web service. There is no backend, database or keys, so nothing needs a volume. The one thing that matters most: the existing Dockerfile runs `npm ci`, but the repo has no package-lock.json, so the build fails until that is fixed.
+Cyberpunk Analytics is a client-side React dashboard. Vite builds it into static files, and nginx serves them on port 80 as one web service, with no backend, database or keys. The one thing that matters most for production is that the existing Dockerfile runs `npm ci`, but the repo has no package-lock.json, so the image build will fail until that is fixed.
 
-- **services: One web service, built from the repo's Dockerfile, serving the built SPA with nginx** — The app is a client-only React dashboard with no server code, database or external services, and the Dockerfile builds to dist/ and serves it with nginx. (`Dockerfile`, `package.json`, `app.jsx`, `main.jsx`)
-- **networking: Expose port 80 at path / and keep nginx.conf's try_files fallback to index.html** — nginx.conf listens on 80 and routes unknown paths to index.html, so client-side routes resolve. (`nginx.conf`, `Dockerfile`)
-- **build: Keep the multi-stage Dockerfile, move the base images to mirror.gcr.io/library/node:20-alpine and mirror.gcr.io/library/nginx:alpine, and use `npm install` instead of `npm ci`** — The Dockerfile uses Docker Hub images and `npm ci`, but there is no package-lock.json in the tree, so `npm ci` fails. (`Dockerfile`, `package.json`)
-- **storage: No volumes** — The app stores no data at runtime. nginx only serves static files baked into the image. (`Dockerfile`, `nginx.conf`)
-- **scaling: Run the web service at 1 instance by default; it can scale out freely** — Static files served by nginx keep no session state. (`nginx.conf`)
+- **services: One web service named 'web': the repo's multi-stage Dockerfile builds the app, and nginx serves dist/ on port 80 at path /.** — The Dockerfile builds with Vite and copies dist into nginx, which listens on 80 per nginx.conf. (`Dockerfile`, `nginx.conf`, `package.json`)
+- **database: No database, cache or volume.** — package.json has only UI dependencies (react, recharts, lucide-react) and no server code, so nothing needs to survive a restart. (`package.json`)
+- **build: Use the existing Dockerfile, with mirrored base images and an install step that works without a lockfile.** — The Dockerfile pulls node:20-alpine and nginx:alpine straight from Docker Hub and runs `npm ci`, but package-lock.json is not in the repo. (`Dockerfile`, `package.json`)
+- **networking: nginx falls back to index.html so client-side routes resolve, and Nexlayer routes public traffic to port 80.** — nginx.conf uses try_files $uri $uri/ /index.html. (`nginx.conf`)
+- **keys: No keys or environment variables.** — The app is a static bundle with no runtime configuration read from the environment. (`package.json`, `vite.config.js`)
 
 ### Fix before production
 
-- **Blocker** — Commit a package-lock.json or replace `npm ci` with `npm install` in the Dockerfile: `npm ci` exits with an error when no lockfile is present, so the image build fails and nothing deploys. (`Dockerfile`)
-- Change the FROM lines to use mirror.gcr.io/library/: Pulling from Docker Hub directly can hit rate limits and fail the build. (`Dockerfile`)
+- **Blocker** — Commit package-lock.json or switch the Dockerfile to npm install: `npm ci` errors out when no package-lock.json exists, so the image build fails. (`Dockerfile`)
+- Prefix base images with mirror.gcr.io/library/: Pulling node:20-alpine and nginx:alpine straight from Docker Hub can fail or hit rate limits on the build cluster. (`Dockerfile`)
+- Repeat the security headers inside the static-asset location block: nginx drops server-level add_header lines in any location that defines its own add_header, so JS and CSS responses lose X-Frame-Options and nosniff. (`nginx.conf`)
 
 ### Verify after the deploy
 
-1. GET / on the app URL returns 200 with an HTML body containing a div with id root
-2. GET /some/unknown/route on the app URL returns 200 (served by the index.html fallback)
-3. A JS asset referenced in index.html returns 200 with a Cache-Control header containing 'immutable'
-4. The response to / includes the X-Content-Type-Options: nosniff header
+1. GET / on the app URL returns 200 with an HTML body containing a <div id="root"> mount point or a script tag for /assets/
+2. GET /some/unknown/route on the app URL returns 200 (the SPA fallback to index.html works)
+3. GET one of the /assets/*.js files referenced by index.html returns 200 with a Cache-Control header containing 'immutable'
+4. GET / response headers include X-Content-Type-Options: nosniff
 
-### Ask the human
-
-- The dashboard shows metrics but the repo has no data source. Is it meant to stay demo/mock data, or should it later connect to a real analytics API?
-
-## Drafts in this pull request
+## Drafts in this plan
 
 This repo had no deploy config, so this plan adds drafts where files were
 missing (never over an existing file):
@@ -58,7 +55,9 @@ After the first successful deploy, these files are the source of truth.
 
 ## Can this deploy right now?
 
-**Yes.** Nothing is blocking.
+**Not yet — 1 blocker under "Fix before production" (yours).** Full list in `.nexlayer/todo.md`.
+
+Fix those first. Deploying with them open ships a known problem.
 
 ## How to deploy
 
