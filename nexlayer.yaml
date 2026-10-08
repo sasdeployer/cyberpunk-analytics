@@ -1,0 +1,9 @@
+application:
+  name: cyberpunk-analytics
+  pods:
+    - name: web
+      image: "registry.nexlayer.io/user_01m47dfhg60zn1jv2p7gkegt3x/cyberpunk-analytics-web:planned"
+      path: /
+      servicePorts:
+        - 80
+      vars: {}
