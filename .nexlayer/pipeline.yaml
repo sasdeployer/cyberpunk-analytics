@@ -5,7 +5,8 @@
 app: cyberpunk-analytics
 deploy:
   config: nexlayer.yaml   # a draft, added by this plan — check it
-  environment: ~   # set by the first deploy
+  environment: zen-antelope
+  url: 'https://zen-antelope-cyberpunk-analytics.cloud.nexlayer.ai'
   through: nexlayer-mcp          # validate -> deploy -> status; nothing deploys around it
 build:
   - pod: web             # the nexlayer.yaml pod that runs it
@@ -25,6 +26,7 @@ verify:                         # done means all of these pass
   - url: /                       # the live URL answers 2xx/3xx with a real page
 rollback: redeploy the previous image tag from the Nexlayer deploy history
 notes:                          # from the analysis — keep what holds, fix what doesn't
-  - 'Single static frontend pod: the Dockerfile builds with node:20-alpine and serves dist via nginx on port 80. The Dockerfile base images should be mirrored (mirror.gcr.io/library/node:20-alpine and mirror.gcr.io/library/nginx:alpine) for the cluster.'
-  - 'No backend, database, or cache is present; data appears to be generated client-side, so no other pods are needed.'
-  - 'No environment variables are required.'
+  - 'This is a static frontend application; the build step (vite build) produces dist/ which nginx serves as static files.'
+  - 'The production Dockerfile is multi-stage: node:20-alpine builds the assets, nginx:alpine serves them. For Nexlayer, the runtime pod only needs the nginx stage.'
+  - 'No inter-pod communication is needed as there is no backend or database.'
+  - 'No database pod is required — all data is client-side (mock or embedded).'

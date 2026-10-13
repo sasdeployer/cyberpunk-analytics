@@ -5,21 +5,18 @@ starts with the same picture. Read this before proposing infrastructure
 changes.
 
 - **Repo** `https://github.com/sasdeployer/cyberpunk-analytics` on `main`
-- **Analyzed** 2026-10-08T02:31:49.238Z
+- **Analyzed** 2026-10-13T21:05:59.107Z
 
 ## Stack
 
 | Component | Version | How we know |
 | --- | --- | --- |
-| JavaScript | ES modules | read from `package.json`, `app.jsx`, `main.jsx` |
+| Node.js | 20 | read from `Dockerfile`, `package.json` |
 | React | 18.2 | read from `package.json` |
 | Vite | 5.0 | read from `package.json`, `vite.config.js` |
-| Tailwind CSS | 3.4 | read from `package.json`, `tailwind.config.js`, `postcss.config.js` |
-| PostCSS | 8.4 | read from `package.json`, `postcss.config.js` |
+| Tailwind CSS | 3.4 | read from `package.json`, `tailwind.config.js` |
 | Recharts | 2.10 | read from `package.json` |
-| lucide-react | 0.263 | read from `package.json` |
-| nginx | alpine | read from `Dockerfile`, `nginx.conf` |
-| Docker | multi-stage | read from `Dockerfile` |
+| Nginx | alpine | read from `Dockerfile`, `nginx.conf` |
 
 ## How Nexlayer will run it
 
@@ -37,19 +34,12 @@ Networking, HTTPS, and service discovery are handled.
 
 This app needs no secrets to run.
 
-## What the human told us
-
-**Stage.** This is an experiment.
-
-Said by a person, not derived from the code. Where this contradicts what
-the repo looks like, the person is right about intent and the repo is
-right about what exists today.
-
 ## Notes from the analysis
 
-- Single static frontend pod: the Dockerfile builds with node:20-alpine and serves dist via nginx on port 80. The Dockerfile base images should be mirrored (mirror.gcr.io/library/node:20-alpine and mirror.gcr.io/library/nginx:alpine) for the cluster.
-- No backend, database, or cache is present; data appears to be generated client-side, so no other pods are needed.
-- No environment variables are required.
+- This is a static frontend application; the build step (vite build) produces dist/ which nginx serves as static files.
+- The production Dockerfile is multi-stage: node:20-alpine builds the assets, nginx:alpine serves them. For Nexlayer, the runtime pod only needs the nginx stage.
+- No inter-pod communication is needed as there is no backend or database.
+- No database pod is required — all data is client-side (mock or embedded).
 
 ## Talking to Nexlayer
 

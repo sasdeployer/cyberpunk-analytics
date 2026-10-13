@@ -5,15 +5,16 @@ Every tool below takes the same two values. They are already known:
 | | |
 | --- | --- |
 | applicationName | `cyberpunk-analytics` |
-| environment | `<environment from the nexlayer_deploy response>` |
+| environment | `zen-antelope` |
 | services | `web` |
-| inside the debug proxy | `cyberpunk-analytics-web-service:80` |
+| inside the debug proxy | `cyberpunk-analytics-web-service.zen-antelope.svc.cluster.local:80` |
+| URL | <https://zen-antelope-cyberpunk-analytics.cloud.nexlayer.ai> |
 
 ## First move, by symptom
 
 | Symptom | Start with |
 | --- | --- |
-| Deploy didn't come up, or a service keeps restarting | `nexlayer_check_deployment_status` → `nexlayer_get_deployment_logs` for that service → `nexlayer_get_deployment_events` |
+| Deploy didn't come up, or a service keeps restarting | `nexlayer_verify_deploy` (status, logs and the reason in one call) → `nexlayer_get_deployment_logs` for that service → `nexlayer_get_deployment_events` |
 | The site answers but with errors (500s, blank page) | `nexlayer_get_deployment_logs`, then the debug proxy (below) to look inside |
 | One service can't reach another | debug proxy → `nexlayer_debug_proxy_exec` / `nexlayer_debug_proxy_http` against the full service name above (never localhost) |
 | Status shows more services than `nexlayer.yaml` lists | a leftover from an older config — it keeps running after it leaves the file. Ask the human before removing it. |
@@ -22,11 +23,11 @@ Every tool below takes the same two values. They are already known:
 
 ## Look inside the running app (debug proxy)
 
-1. `nexlayer_debug_deploy_proxy` with environment `<environment from the nexlayer_deploy response>` and applicationName `cyberpunk-analytics` — once per session; it sleeps when idle.
+1. `nexlayer_debug_deploy_proxy` with environment `zen-antelope` and applicationName `cyberpunk-analytics` — once per session; it sleeps when idle.
 2. `nexlayer_debug_namespace_info` — the running services and their exact names.
    Inside the proxy, address services by their full name (table above). The
    environment is shared, so a bare `<service>.pod` can reach another app.
-3. Then what the symptom needs: `nexlayer_debug_proxy_http` (e.g. `http://cyberpunk-analytics-web-service:80/`), `nexlayer_debug_proxy_exec`, `nexlayer_debug_db_query`, `nexlayer_debug_shell_open`, `nexlayer_debug_file_list` / `nexlayer_debug_file_edit`.
+3. Then what the symptom needs: `nexlayer_debug_proxy_http` (e.g. `http://cyberpunk-analytics-web-service.zen-antelope.svc.cluster.local:80/`), `nexlayer_debug_proxy_exec`, `nexlayer_debug_db_query`, `nexlayer_debug_shell_open`, `nexlayer_debug_file_list` / `nexlayer_debug_file_edit`.
 4. After any change inside, restart: `nexlayer_debug_pod_restart` (one service) or `nexlayer_debug_pod_restart_deployment`.
 
 A fix made inside the running app is lost on the next deploy. Put the same
@@ -47,4 +48,4 @@ Full guide: `.nexlayer/skills/debug-nexlayer/SKILL.md`.
 
 ## Done means verified
 
-`nexlayer_check_deployment_status` healthy for every service, and the URL answers with a real page — the `verify` list in `.nexlayer/pipeline.yaml`.
+`nexlayer_verify_deploy` says ✓ Working: every service running, and the URL answers — the `verify` list in `.nexlayer/pipeline.yaml`.
