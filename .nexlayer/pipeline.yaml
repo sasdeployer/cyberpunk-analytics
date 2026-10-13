@@ -1,0 +1,32 @@
+# How this app goes from a commit to live on Nexlayer.
+# Written by Nexlayer from what it read in this repo; owned by your coding
+# agent from here. Every agent and CI runs exactly this. Secret VALUES are
+# never written here.
+app: cyberpunk-analytics
+deploy:
+  config: nexlayer.yaml   # a draft, added by this plan — check it
+  environment: zen-antelope
+  url: 'https://zen-antelope-cyberpunk-analytics.cloud.nexlayer.ai'
+  through: nexlayer-mcp          # validate -> deploy -> status; nothing deploys around it
+build:
+  - pod: web             # the nexlayer.yaml pod that runs it
+    image: cyberpunk-analytics-web         # registry.nexlayer.io/<your user id>/cyberpunk-analytics-web:<tag>
+    context: .
+    dockerfile: Dockerfile
+    platform: linux/amd64
+    tag: git-sha                 # immutable; "latest" is rejected
+    # read from `Dockerfile`
+services:
+  - name: web
+    port: 80
+    public: true   # read from `.nexlayer/drafts/nexlayer.yaml`
+verify:                         # done means all of these pass
+  - service: web
+    status: running             # nexlayer_check_deployment_status
+  - url: /                       # the live URL answers 2xx/3xx with a real page
+rollback: redeploy the previous image tag from the Nexlayer deploy history
+notes:                          # from the analysis — keep what holds, fix what doesn't
+  - 'This is a static frontend application; the build step (vite build) produces dist/ which nginx serves as static files.'
+  - 'The production Dockerfile is multi-stage: node:20-alpine builds the assets, nginx:alpine serves them. For Nexlayer, the runtime pod only needs the nginx stage.'
+  - 'No inter-pod communication is needed as there is no backend or database.'
+  - 'No database pod is required — all data is client-side (mock or embedded).'

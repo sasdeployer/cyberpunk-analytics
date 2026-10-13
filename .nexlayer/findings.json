@@ -1,0 +1,209 @@
+{
+  "schema": "nexlayer.plan.findings/2",
+  "app": "cyberpunk-analytics",
+  "repo": "https://github.com/sasdeployer/cyberpunk-analytics",
+  "branch": "main",
+  "analyzedAt": "2026-10-13T21:06:33.411Z",
+  "registered": true,
+  "techStack": [
+    {
+      "name": "Node.js",
+      "kind": "language",
+      "version": "20",
+      "basis": {
+        "kind": "read",
+        "sources": [
+          "Dockerfile",
+          "package.json"
+        ]
+      }
+    },
+    {
+      "name": "React",
+      "kind": "framework",
+      "version": "18.2",
+      "basis": {
+        "kind": "read",
+        "sources": [
+          "package.json"
+        ]
+      }
+    },
+    {
+      "name": "Vite",
+      "kind": "build",
+      "version": "5.0",
+      "basis": {
+        "kind": "read",
+        "sources": [
+          "package.json",
+          "vite.config.js"
+        ]
+      }
+    },
+    {
+      "name": "Tailwind CSS",
+      "kind": "tool",
+      "version": "3.4",
+      "basis": {
+        "kind": "read",
+        "sources": [
+          "package.json",
+          "tailwind.config.js"
+        ]
+      }
+    },
+    {
+      "name": "Recharts",
+      "kind": "tool",
+      "version": "2.10",
+      "basis": {
+        "kind": "read",
+        "sources": [
+          "package.json"
+        ]
+      }
+    },
+    {
+      "name": "Nginx",
+      "kind": "infra",
+      "version": "alpine",
+      "basis": {
+        "kind": "read",
+        "sources": [
+          "Dockerfile",
+          "nginx.conf"
+        ]
+      }
+    }
+  ],
+  "services": [
+    {
+      "name": "web",
+      "image": "registry.nexlayer.io/YOUR_USER_ID/cyberpunk-analytics-web:planned",
+      "role": null,
+      "port": 80,
+      "reachable": true,
+      "reachableBasis": {
+        "kind": "read",
+        "sources": [
+          ".nexlayer/drafts/nexlayer.yaml"
+        ]
+      },
+      "envNames": []
+    }
+  ],
+  "secrets": [],
+  "secretsSummary": {
+    "total": 0,
+    "supplied": 0,
+    "neededFromHuman": 0
+  },
+  "codeGaps": [],
+  "buildConfig": {},
+  "deployNotes": [
+    "This is a static frontend application; the build step (vite build) produces dist/ which nginx serves as static files.",
+    "The production Dockerfile is multi-stage: node:20-alpine builds the assets, nginx:alpine serves them. For Nexlayer, the runtime pod only needs the nginx stage.",
+    "No inter-pod communication is needed as there is no backend or database.",
+    "No database pod is required — all data is client-side (mock or embedded)."
+  ],
+  "intent": {
+    "stage": "side-project"
+  },
+  "fromManifest": false,
+  "live": {
+    "applicationName": "cyberpunk-analytics",
+    "environment": "zen-antelope",
+    "url": "https://zen-antelope-cyberpunk-analytics.cloud.nexlayer.ai",
+    "status": "running"
+  },
+  "legacyDocs": [],
+  "drafts": {
+    "manifest": true,
+    "by": "agent",
+    "dockerfiles": [],
+    "noTemplate": []
+  },
+  "productionPlan": {
+    "summary": "A single nginx pod serves the pre-built static Vite/React dashboard. There is no backend, database, or persistent data — the entire app is client-side with mock analytics. The one thing that matters most is ensuring the build step produces dist/ and nginx serves it correctly.",
+    "decisions": [
+      {
+        "topic": "services",
+        "decision": "One web pod running nginx to serve the static Vite build output from /usr/share/nginx/html",
+        "why": "The Dockerfile's production stage is nginx:alpine serving static files, and the nginx.conf has SPA fallback (try_files $uri $uri/ /index.html) — no other services are needed",
+        "evidence": [
+          "Dockerfile",
+          "nginx.conf"
+        ]
+      },
+      {
+        "topic": "build",
+        "decision": "Use the existing multi-stage Dockerfile: node:20-alpine runs vite build to produce dist/, then nginx:alpine serves it",
+        "why": "The Dockerfile already correctly builds the Vite app and copies dist/ into the nginx image at /usr/share/nginx/html",
+        "evidence": [
+          "Dockerfile",
+          "vite.config.js"
+        ]
+      },
+      {
+        "topic": "networking",
+        "decision": "Single pod listens on port 80 and receives all external traffic at path /",
+        "why": "nginx.conf listens on port 80 and the nginx.conf SPA rewrite rule handles all routes",
+        "evidence": [
+          "nginx.conf"
+        ]
+      },
+      {
+        "topic": "storage",
+        "decision": "No volumes — the app serves only static build artifacts with no uploads, no database, no state to persist",
+        "why": "There are no external_deps, no database, and all analytics data is client-side mock or embedded in the bundle",
+        "evidence": [
+          "package.json",
+          "app.jsx"
+        ]
+      }
+    ],
+    "fix_before_production": [
+      {
+        "title": "Commit package-lock.json or change npm ci to npm install in the Dockerfile",
+        "why": "No package-lock.json appears in the repository tree, but the Dockerfile runs `npm ci` which fails without a lockfile — the build will crash",
+        "where": "Dockerfile",
+        "severity": "blocker"
+      }
+    ],
+    "verify_after_deploy": [
+      "GET / on the app URL returns HTTP 200 and an HTML page containing the cyberpunk analytics dashboard markup",
+      "GET / returns Content-Type: text/html",
+      "GET /assets/index-*.js (or similar hashed JS bundle) returns HTTP 200 with Content-Type containing 'javascript'",
+      "A request to an unknown route like /nonexistent-page returns the same index.html (SPA fallback works)"
+    ],
+    "open_questions": [],
+    "nexlayer_yaml": "application:\n  name: cyberpunk-analytics\n  pods:\n    - name: web\n      image: \"registry.nexlayer.io/YOUR_USER_ID/cyberpunk-analytics-web:planned\"\n      path: /\n      servicePorts:\n        - 80\n      vars: {}",
+    "builds": [
+      {
+        "service": "web",
+        "context": ".",
+        "dockerfile": "Dockerfile",
+        "exists": true,
+        "notes": ""
+      }
+    ],
+    "yaml_valid": true,
+    "model": "deepseek-v4-flash",
+    "dropped_evidence": 0
+  },
+  "builds": [
+    {
+      "pod": "web",
+      "image": "cyberpunk-analytics-web",
+      "context": ".",
+      "dockerfile": "Dockerfile",
+      "basis": {
+        "kind": "read",
+        "sources": [
+          "Dockerfile"
+        ]
+      }
+    }
+  ]
+}
