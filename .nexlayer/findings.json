@@ -3,7 +3,7 @@
   "app": "cyberpunk-analytics",
   "repo": "https://github.com/sasdeployer/cyberpunk-analytics",
   "branch": "main",
-  "analyzedAt": "2026-10-13T21:05:59.107Z",
+  "analyzedAt": "2026-10-13T21:06:33.411Z",
   "registered": true,
   "techStack": [
     {
@@ -107,7 +107,9 @@
     "No inter-pod communication is needed as there is no backend or database.",
     "No database pod is required — all data is client-side (mock or embedded)."
   ],
-  "intent": null,
+  "intent": {
+    "stage": "side-project"
+  },
   "fromManifest": false,
   "live": {
     "applicationName": "cyberpunk-analytics",

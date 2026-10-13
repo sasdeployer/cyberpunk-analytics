@@ -10,7 +10,7 @@ ask Nexlayer for it (see "How to deploy").
 | --- | --- |
 | Name | `cyberpunk-analytics` |
 | Repo | `https://github.com/sasdeployer/cyberpunk-analytics` on `main` |
-| Planned | 2026-10-13T21:05:59.107Z |
+| Planned | 2026-10-13T21:06:33.411Z |
 | Registered with Nexlayer | yes |
 
 `.nexlayer/plan.lock` pins the commit this plan was written against. If HEAD
